@@ -1,0 +1,6 @@
+[server default]
+manager_workdir=/var/log/masterha
+remote_workdir=/var/log/masterha
+master_binlog_dir=/var/log/mysql
+ping_interval=2
+ssh_user=root

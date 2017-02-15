@@ -1,0 +1,58 @@
+version: "2"
+
+services:
+    mha_share:
+        image: debian:jessie
+        volumes:
+            - "./employees_share/:/mha_share/"
+    mha_node:
+        build: ./mha_node
+        image: prontera/mha_node
+        read_only: true
+    mha_manager:
+        build: ./mha_manager
+        image: prontera/mha_manager
+        read_only: true
+    master:
+        image: prontera/mha_node
+        depends_on:
+            - mha_node
+        ports:
+            - "3406:3306"
+        volumes:
+            - "./employees_db/:/docker-entrypoint-initdb.d/:ro"
+            - "./employees_master/lib/:/var/lib/mysql/"
+            - "./employees_master/log/:/var/log/mysql/"
+            - "./employees_master/conf.d/:/etc/mysql/mysql.conf.d/"
+        volumes_from:
+            - mha_share
+        env_file:
+            - ./account.env
+        environment:
+            - MYSQL_USER=prontera
+            - MYSQL_PASSWORD=123123
+    slave_1:
+        image: prontera/mha_node
+        depends_on:
+            - master
+        ports:
+            - "3407:3306"
+        volumes:
+            - "./employees_slave_1/lib/:/var/lib/mysql/"
+            - "./employees_slave_1/log/:/var/log/mysql/"
+            - "./employees_slave_1/conf.d/:/etc/mysql/mysql.conf.d/"
+        volumes_from:
+            - mha_share
+        env_file:
+            - ./account.env
+    manager:
+        image: prontera/mha_manager
+        depends_on:
+            - mha_manager
+            - slave_1
+        volumes_from:
+            - mha_share
+        entrypoint:
+            tailf /dev/null
+        env_file:
+            - ./account.env
